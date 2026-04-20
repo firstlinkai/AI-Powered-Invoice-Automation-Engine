@@ -1,0 +1,2132 @@
+{
+  "name": "Moneybird Invoicing Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=0"
+        },
+        "event": "rowUpdate",
+        "options": {
+          "columnsToWatch": [
+            "Status"
+          ]
+        }
+      },
+      "id": "354c1692-17b5-4e8c-bd5b-f50de1f2c1d2",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -576
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "5Eo189tOLqHSTMjl",
+          "name": "Google Sheets Trigger account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "=https://moneybird.com/api/v2/484267917559465845/contacts.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json['Customer_Email'] }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "c9dbe897-a558-4681-afaf-70a5cbb797ea",
+      "name": "Search Contact in Moneybird",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -128,
+        -240
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Dz48wbLbpxBvROfk",
+          "name": "MoneyBird Auth Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Record').item.json.Customer_Email }}",
+                    "rightValue": "={{ $json.email }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b50cc44c-9564-432d-add1-4df508cd4171"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "contact_found"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "0b50e00c-db1e-404c-ac4f-58f8f37c572c",
+      "name": "Contact Found?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        240,
+        -496
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://moneybird.com/api/v2/484267917559465845/contacts.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contact\": {\n    \"company_name\": \"{{ $('Get Record').item.json.Company_name }}\",\n    \"firstname\": \"{{ $('Get Record').item.json.Customer_name }}\",\n    \"email\": \"{{ $('Get Record').item.json.Customer_Email }}\",\n    \"customer_id\": \"{{ $('Get Record').item.json.External_customer_id }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "ba71cffb-04db-4b7e-83af-fb96bba455ab",
+      "name": "Create New Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        464,
+        -368
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Dz48wbLbpxBvROfk",
+          "name": "MoneyBird Auth Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "47a12496-644c-4deb-a3fa-ed5297fae5af",
+      "name": "Extract contact_id (Found)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        480,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "Contact ID",
+              "stringValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b4f417b7-a776-4623-ba7a-9447dfd03f3f",
+      "name": "Extract contact_id (Created)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        656,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Record').item.json.Vat_Type.toString() }}",
+                    "rightValue": "21%",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2e88f4a9-566d-45d2-b7e7-5986d711dfac"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "21%"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Record').item.json.Vat_Type.toString() }}",
+                    "rightValue": "9%",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "691898f9-1567-42b7-a8b2-abd237d15870"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "9%"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "e78a512d-2360-4897-b4e6-637afeb40f62",
+                    "leftValue": "={{ $('Get Record').item.json.Vat_Type.toString() }}",
+                    "rightValue": "0%",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "0%"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "d33a8244-580c-4a71-9103-2c28c686987b",
+                    "leftValue": "={{ $('Get Record').item.json.Vat_Type.toString() }}",
+                    "rightValue": "EU Reverse Charge",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "EU Reverse Charge"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "b76df104-736e-48f1-9d78-40d0fc47fd53",
+      "name": "VAT Mapping Engine",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -80,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "tax_rate_id",
+              "stringValue": "484267918574486648"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "dbb37803-80d4-4ce4-8c97-72edcb5135ee",
+      "name": "Set tax_rate_id 21%",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        432,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "tax_rate_id",
+              "stringValue": "484267918580778105"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "172099ab-2906-40e3-a8a0-a2ef64295b63",
+      "name": "Set tax_rate_id 9%",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        432,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://moneybird.com/api/v2/484267917559465845/sales_invoices.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sales_invoice\": {\n    \"contact_id\": \"{{ $('Merge contact_id').item.json.id }}\",\n    \"reference\": \"{{ $('Merge Node').item.json.Reference }}\",\n    \"details_attributes\": {{ JSON.stringify($json.lineItems.map(item => ({...item, tax_rate_id: $json.tax_rate_id}))) }}\n  }\n}",
+        "options": {}
+      },
+      "id": "9ed2c2e1-929a-4c6f-a515-8296f33a86fe",
+      "name": "Create Invoice in Moneybird",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1600,
+        80
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Dz48wbLbpxBvROfk",
+          "name": "MoneyBird Auth Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer_Email": "={{ $json.contact.email }}",
+            "Invoice_URL": "=https://moneybird.com/484267917559465845/sales_invoices/{{ $json.id }}",
+            "Error_Message": "={{ $('Get Record').item.json.Error_Message }}",
+            "Moneybird_contact_id": "={{ $json.contact_id }}",
+            "Status": "Invoiced",
+            "Moneybird_Invoice_ID": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "Customer_Email"
+          ],
+          "schema": [
+            {
+              "id": "Customer_name",
+              "displayName": "Customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company_name",
+              "displayName": "Company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "External_customer_id",
+              "displayName": "External_customer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice_date",
+              "displayName": "Invoice_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Send_date",
+              "displayName": "Send_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hours",
+              "displayName": "Hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hourly_Rate",
+              "displayName": "Hourly_Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount_excl_vat",
+              "displayName": "Amount_excl_vat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vat_percentage",
+              "displayName": "Vat_percentage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reference",
+              "displayName": "Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_contact_id",
+              "displayName": "Moneybird_contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_Invoice_ID",
+              "displayName": "Moneybird_Invoice_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Invoice_URL",
+              "displayName": "Invoice_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MB_Status",
+              "displayName": "MB_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Error_Message",
+              "displayName": "Error_Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remarks",
+              "displayName": "Remarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "409b0101-835f-42b3-a0a0-b03ed3f7647b",
+      "name": "Update Sheet — invoiced",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2000,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ne5lFAYcDs8mggLN",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "4e2cb057-e0af-4376-a3d6-bc99656f63d0",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1744,
+        704
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Error_Message": "={{ $json.execution.error.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Customer_name",
+              "displayName": "Customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company_name",
+              "displayName": "Company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "External_customer_id",
+              "displayName": "External_customer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice_date",
+              "displayName": "Invoice_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Send_date",
+              "displayName": "Send_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hours",
+              "displayName": "Hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hourly_Rate",
+              "displayName": "Hourly_Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount_excl_vat",
+              "displayName": "Amount_excl_vat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vat_percentage",
+              "displayName": "Vat_percentage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reference",
+              "displayName": "Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_contact_id",
+              "displayName": "Moneybird_contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_Invoice_ID",
+              "displayName": "Moneybird_Invoice_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Invoice_URL",
+              "displayName": "Invoice_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MB_Status",
+              "displayName": "MB_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Error_Message",
+              "displayName": "Error_Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remarks",
+              "displayName": "Remarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8e68b9fd-6b98-4a49-b6ff-946e9d72c1b3",
+      "name": "Update Sheet — error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1536,
+        704
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ne5lFAYcDs8mggLN",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "id": "21aad3ef-0c79-4fe4-a188-ee7e78073758",
+      "name": "Merge contact_id",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        816,
+        -592
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "617e21e8-00ca-4607-a20c-f05cb16f33ca",
+      "name": "Merge tax_rate_id",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        864,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://moneybird.com/api/v2/{{ $('Create Invoice in Moneybird').item.json.administration_id }}/sales_invoices/{{ $json.Moneybird_Invoice_ID }}.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json['Customer_Email'] }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "8c1444a4-859e-48bb-8ece-897ae96ed46c",
+      "name": "Fetch MB Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2192,
+        128
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Dz48wbLbpxBvROfk",
+          "name": "MoneyBird Auth Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer_Email": "={{ $json.contact.email }}",
+            "MB_Status": "={{ $json.state }}"
+          },
+          "matchingColumns": [
+            "Customer_Email"
+          ],
+          "schema": [
+            {
+              "id": "Customer_name",
+              "displayName": "Customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Email",
+              "displayName": "Customer_Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company_name",
+              "displayName": "Company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "External_customer_id",
+              "displayName": "External_customer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice_date",
+              "displayName": "Invoice_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Send_date",
+              "displayName": "Send_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hours",
+              "displayName": "Hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hourly_Rate",
+              "displayName": "Hourly_Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount_excl_vat",
+              "displayName": "Amount_excl_vat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vat_percentage",
+              "displayName": "Vat_percentage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Project",
+              "displayName": "Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reference",
+              "displayName": "Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_contact_id",
+              "displayName": "Moneybird_contact_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Moneybird_invoice_id",
+              "displayName": "Moneybird_invoice_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Moneybird_Inoice_ID",
+              "displayName": "Moneybird_Inoice_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Invoice_URL",
+              "displayName": "Invoice_URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Error_Message",
+              "displayName": "Error_Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "MB_Status",
+              "displayName": "MB_Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "eeddc4e0-76ec-4bf3-a4c4-5f683215779b",
+      "name": "Update MB Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2368,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ne5lFAYcDs8mggLN",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1328,
+        0
+      ],
+      "id": "0436e461-12ad-4cc2-a3bf-8997b440a08c",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Ready for Invoice"
+            }
+          ]
+        },
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "general": "FORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1072,
+        0
+      ],
+      "id": "b81bf7f2-25f5-4919-ad77-ce488fef252b",
+      "name": "Get Record",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ne5lFAYcDs8mggLN",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet AI",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "458e41cb-9818-46e9-b51f-f6e0e41772bb"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet AI"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fc82815c-b314-42ab-93fd-a81ecbbed17f",
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet Digital Advertising",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet Digital Advertising"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "98faa548-73a3-4fd9-8e26-6c64654e6508",
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet SEO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet SEO"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e7d38572-4418-4683-a330-3e2afe36a7ba",
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet Linkbuilding",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet Linkbuilding"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "73aeb084-dce1-4d40-9a7f-2a7c157ce54c",
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet Media Spend",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet Media Spend"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "18d39762-455e-4898-8a3d-9ebd426d3968",
+                    "leftValue": "={{ $('Get Record').item.json.Service_Category }}",
+                    "rightValue": "Omzet Website Development",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Omzet Website Development"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2128,
+        -976
+      ],
+      "id": "d744a6f1-0d5e-4da7-a6c9-53e944e2f493",
+      "name": "Team Mapping Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856606979261540",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2624,
+        -1120
+      ],
+      "id": "71e45b59-6248-48c4-ab14-f9ab1f3b3ffa",
+      "name": "Set Ledger AI"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856624226240149",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2624,
+        -928
+      ],
+      "id": "fcb5e4c0-417f-40f7-9f59-94d99410ce8e",
+      "name": "Set Ledger Dig-Ad"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856636462073480",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2624,
+        -720
+      ],
+      "id": "9798f6f3-7cd4-4bfe-8f2e-027329296b98",
+      "name": "Set Ledger SEO"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856644527719754",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2608,
+        -512
+      ],
+      "id": "4a3f45fd-ca12-4131-95ca-682abb6a32b4",
+      "name": "Set Ledger Link"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856658485314953",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2624,
+        -304
+      ],
+      "id": "ee115654-3447-4d43-9415-4ba2625fa8a3",
+      "name": "Set Ledger Media"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f99ceb34-749b-4970-8795-7150cd239849",
+              "name": "ledger_account_id",
+              "value": "484856667467417427",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2624,
+        -96
+      ],
+      "id": "03fc4349-38f4-46a4-85db-cdaca75d962b",
+      "name": "Set Ledger Web-Dev"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2976,
+        -928
+      ],
+      "id": "3df78ff6-c687-4074-b53d-119472949327",
+      "name": "Merge ledger_id"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "tax_rate_id",
+              "stringValue": "484267918584972410"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "cfe00922-db66-40af-9c73-def401bf762d",
+      "name": "Set tax_rate_id 0%",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        432,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "tax_rate_id",
+              "stringValue": "484856951088350360"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "9abc102f-56ab-4b46-bab6-03776023f802",
+      "name": "Set tax_rate_id Reverse Charge",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        432,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1360,
+        48
+      ],
+      "id": "cbaaa8bc-d280-43f6-b3a4-c9d0e1d1d515",
+      "name": "Final Data Merger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Calculate Period (Previous Month)\nconst date = new Date();\ndate.setMonth(date.getMonth() - 1);\nconst monthNames = [\"January\", \"February\", \"March\", \"April\", \"May\", \"June\",\n  \"July\", \"August\", \"September\", \"October\", \"November\", \"December\"\n];\nconst periodText = `Period: ${monthNames[date.getMonth()]} ${date.getFullYear()}`;\n\n// 2. Ledger Mapping\nconst categoryToLedger = {\n  \"Omzet AI\": \"484856606979261540\",\n  \"Omzet SEO\": \"484856636462073480\",\n  \"Omzet Digital Advertising\": \"484856624226240149\",\n  \"Omzet Linkbuilding\": \"484856644527719754\",\n  \"Omzet Website Development\": \"484856667467417427\",\n  \"Omzet Media Spend\": \"484856658485314953\"\n};\n\n// 3. Extract and Clean Data\nconst categories = ($json.Service_Category || \"\").split(',').map(s => s.trim()).filter(s => s.length > 0);\nconst hoursArr = ($json.Hours_Breakdown || \"\").split(',').map(s => s.trim());\nconst descriptions = ($json.Description_Breakdown || \"\").split(',').map(s => s.trim());\n\n// 4. Generate Line Items\nconst lineItems = categories.map((cat, index) => {\n  const rateKey = `${cat} Rate`; \n  const price = parseFloat($json[rateKey]) || 0;\n\n  return {\n    \"description\": `${descriptions[index] || \"Work\"} - ${cat}\\n${periodText}`,\n    \"amount\": parseFloat(hoursArr[index]) || 0, // Moneybird API needs the key to be \"amount\" for quantity\n    \"unit\": $json.Unit || \"hours\",\n    \"price\": price,\n    \"ledger_account_id\": categoryToLedger[cat] || \"0\"\n  };\n});\n\nreturn { \n  lineItems,\n  count: lineItems.length \n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        16
+      ],
+      "id": "a98fb7c5-9008-4cff-ab6e-49d1d532958c",
+      "name": "Map Multiple Services"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU",
+          "mode": "list",
+          "cachedResultName": "Invoice Engine - DGTLBase",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 25079286,
+          "mode": "list",
+          "cachedResultName": "Client Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EDTCjgwXAde89yYYmWpCefzIvcMWxms-CSFXP_gHRFU/edit#gid=25079286"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Company_name",
+              "lookupValue": "={{ $json.Company_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -864,
+        160
+      ],
+      "id": "5eda7e1d-ea06-44aa-988e-46875588c587",
+      "name": "Get Client Rates",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ne5lFAYcDs8mggLN",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "2accb6f1-d3fa-43fe-bf7b-d09f0b7dc5eb",
+      "name": "Merge Node",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -656,
+        16
+      ],
+      "alwaysOutputData": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Search Contact in Moneybird": {
+      "main": [
+        [
+          {
+            "node": "Contact Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact Found?": {
+      "main": [
+        [
+          {
+            "node": "Extract contact_id (Found)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create New Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract contact_id (Found)": {
+      "main": [
+        [
+          {
+            "node": "Merge contact_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Contact": {
+      "main": [
+        [
+          {
+            "node": "Extract contact_id (Created)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract contact_id (Created)": {
+      "main": [
+        [
+          {
+            "node": "Merge contact_id",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "VAT Mapping Engine": {
+      "main": [
+        [
+          {
+            "node": "Set tax_rate_id 21%",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set tax_rate_id 9%",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set tax_rate_id 0%",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set tax_rate_id Reverse Charge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set tax_rate_id 0%",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set tax_rate_id 21%": {
+      "main": [
+        [
+          {
+            "node": "Merge tax_rate_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set tax_rate_id 9%": {
+      "main": [
+        [
+          {
+            "node": "Merge tax_rate_id",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create Invoice in Moneybird": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet — invoiced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet — error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge contact_id": {
+      "main": [
+        [
+          {
+            "node": "Final Data Merger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge tax_rate_id": {
+      "main": [
+        [
+          {
+            "node": "Final Data Merger",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Update Sheet — invoiced": {
+      "main": [
+        [
+          {
+            "node": "Fetch MB Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch MB Status": {
+      "main": [
+        [
+          {
+            "node": "Update MB Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Record": {
+      "main": [
+        [
+          {
+            "node": "Merge Node",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Client Rates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search Contact in Moneybird",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "VAT Mapping Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Team Mapping Engine": {
+      "main": [
+        [
+          {
+            "node": "Set Ledger AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ledger Dig-Ad",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ledger SEO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ledger Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ledger Media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ledger Web-Dev",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Ledger AI": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Ledger Dig-Ad": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Ledger SEO": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Set Ledger Link": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Set Ledger Media": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Set Ledger Web-Dev": {
+      "main": [
+        [
+          {
+            "node": "Merge ledger_id",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Set tax_rate_id 0%": {
+      "main": [
+        [
+          {
+            "node": "Merge tax_rate_id",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Set tax_rate_id Reverse Charge": {
+      "main": [
+        [
+          {
+            "node": "Merge tax_rate_id",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge ledger_id": {
+      "main": [
+        []
+      ]
+    },
+    "Final Data Merger": {
+      "main": [
+        [
+          {
+            "node": "Create Invoice in Moneybird",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Multiple Services": {
+      "main": [
+        [
+          {
+            "node": "Final Data Merger",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update Sheet — error": {
+      "main": [
+        []
+      ]
+    },
+    "Get Client Rates": {
+      "main": [
+        [
+          {
+            "node": "Merge Node",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Node": {
+      "main": [
+        [
+          {
+            "node": "Map Multiple Services",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "980ecf80-0e63-4d8b-b4d8-3639c3e8db00",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "563081422b97a9613202fc9e330444d764a4b838aee8c810ae24b64e312e87c7"
+  },
+  "id": "SPnCxZlzChSyPvV2",
+  "tags": []
+}
